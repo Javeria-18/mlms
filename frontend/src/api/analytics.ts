@@ -17,6 +17,20 @@ export async function getCourseQuizAnalytics(courseId: string) {
   };
 }
 
+// Add this to src/api/analytics.ts
+
+
+export async function exportQuizAnalyticsPDF(courseId: string, studentId?: string) {
+  const url = studentId && studentId !== '0'
+    ? `/api/analytics/export/quiz/${courseId}?studentId=${studentId}`
+    : `/api/analytics/export/quiz/${courseId}`;
+  
+  const response = await api.get(url, {
+    responseType: 'blob',
+  });
+  return response.data;
+}
+
 export async function getCourseAssignmentAnalytics(courseId: string) {
   const { data } = await api.get(`/api/analytics/courses/${courseId}/assignments/detail`);
   return data as {

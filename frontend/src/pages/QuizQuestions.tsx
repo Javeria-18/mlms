@@ -207,6 +207,7 @@ const [correctIndices, setCorrectIndices] = useState<number[]>([]);
                       <Label htmlFor="qq-text">Question text</Label>
                       <Textarea
                         id="qq-text"
+                        className="text-foreground bg-background"
                         value={questionText}
                         onChange={(e) => setQuestionText(e.target.value)}
                       />
@@ -218,7 +219,7 @@ const [correctIndices, setCorrectIndices] = useState<number[]>([]);
     {options.map((opt, index) => (
       <div key={index} className="flex items-center gap-2">
         <input
-          className="flex-1 border rounded px-2 py-1 text-sm"
+          className="flex-1 border rounded px-2 py-1 text-sm text-foreground bg-background"
           value={opt}
           onChange={(e) => {
             const next = [...options];
@@ -281,7 +282,7 @@ const [correctIndices, setCorrectIndices] = useState<number[]>([]);
                         id="qq-marks"
                         type="number"
                         min={0}
-                        className="w-24 border rounded px-2 py-1 text-sm"
+                        className="w-24 border rounded px-2 py-1 text-sm text-foreground bg-background"
                         value={marks}
                         onChange={(e) => setMarks(e.target.value)}
                       />

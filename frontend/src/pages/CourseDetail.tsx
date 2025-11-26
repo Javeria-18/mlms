@@ -1,3 +1,5 @@
+// Add this with other imports
+import { deleteCourse } from '@/api/courses';
 import { markMaterialComplete } from '@/api/analytics';
 import { useAuthStore } from '@/store/auth';
 import { listCourseEnrollments, type CourseEnrollmentWithStudent } from '@/api/enrollments';
@@ -41,6 +43,8 @@ export default function CourseDetail() {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -126,6 +130,25 @@ export default function CourseDetail() {
       setMaterialsLoading(false);
     }
   };
+
+  const handleDeleteCourse = async () => {
+    if (!id) return;
+    if (!window.confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteCourse(id);
+      // Redirect to courses list after successful deletion
+      navigate('/courses');
+    } catch (e: any) {
+      setDeleteError(e?.response?.data?.error || 'Failed to delete course');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
   const handleDeleteMaterial = async (materialId: string) => {
     if (!id) return;
     if (!(role === 'Admin' || role === 'Teacher')) return;
@@ -163,7 +186,17 @@ export default function CourseDetail() {
             </p>
           )}
         </div>
+
         <div className="flex items-center gap-2">
+          {role === 'Admin' && (
+            <Button
+              variant="destructive"
+              onClick={handleDeleteCourse}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete Course'}
+            </Button>
+          )}
           {(role === 'Admin' || role === 'Teacher') && (
             <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
               <DialogTrigger asChild>

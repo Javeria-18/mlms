@@ -77,7 +77,7 @@ const [gradeSuccess, setGradeSuccess] = useState<string | null>(null);
     setSubmissions((prev) =>
       prev.map((s) => (s.id === updated.id ? updated : s))
     );
-    setGradeSuccess('Grade saved');
+    setGradeSuccess(`Grade saved for ${submission.studentName || 'student'} in ${course?.title || 'course'}`);
   } catch (e: any) {
     setGradeError(e?.response?.data?.error || 'Failed to save grade');
   } finally {

@@ -13,6 +13,7 @@ const {
   courseAssignmentAnalytics,
   studentCourseQuizAnalytics,
   studentCourseAssignmentAnalytics,
+  exportQuizAnalyticsPDF
 } = require('../controllers/analytics.controller');
 router.use(requireAuth, tenantMiddleware);
 
@@ -50,6 +51,12 @@ router.get(
   '/me/courses/:courseId/assignments',
   requireRole(['Student']),
   studentCourseAssignmentAnalytics
+);
+
+router.get(
+  '/export/quiz/:courseId',
+  requireRole(['Admin', 'Teacher', 'Student']),
+  exportQuizAnalyticsPDF
 );
 
 module.exports = router;

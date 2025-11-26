@@ -207,7 +207,7 @@ export default function CourseQuizzes() {
                                             <Label htmlFor="quiz-title">Title</Label>
                                             <input
                                                 id="quiz-title"
-                                                className="w-full border rounded px-2 py-1 text-sm"
+                                                className="w-full border rounded px-2 py-1 text-sm text-foreground bg-background"
                                                 value={createTitle}
                                                 onChange={(e) => setCreateTitle(e.target.value)}
                                                 required
@@ -228,7 +228,7 @@ export default function CourseQuizzes() {
                                                 id="quiz-duration"
                                                 type="number"
                                                 min={1}
-                                                className="w-full border rounded px-2 py-1 text-sm"
+                                                className="w-full border rounded px-2 py-1 text-sm text-foreground bg-background"
                                                 value={createDurationMinutes}
                                                 onChange={(e) => {
                                                     const v = e.target.value;
@@ -310,7 +310,7 @@ export default function CourseQuizzes() {
                                                     {!q.isPublished && (
                                                         <Button
                                                             size="sm"
-                                                            variant="outline"
+                                                            className="bg-blue-600 hover:bg-blue-600 text-white"
                                                             onClick={() => handlePublish(q.id)}
                                                         >
                                                             Publish
@@ -319,7 +319,7 @@ export default function CourseQuizzes() {
                                                     {q.isPublished && (
                                                         <Button
                                                             size="sm"
-                                                            variant="outline"
+                                                            className="bg-blue-600 hover:bg-blue-600 text-white ml-2"
                                                             onClick={() => handleClose(q.id)}
                                                         >
                                                             Close
@@ -334,7 +334,7 @@ export default function CourseQuizzes() {
                                                     </Button>
                                                     <Button
                                                         size="sm"
-                                                        variant="outline"
+                                                        className="bg-blue-600 hover:bg-blue-600 text-white ml-2"
                                                         onClick={() => navigate(`/quizzes/${courseId}/${q.id}/questions`)}
                                                     >
                                                         Manage questions

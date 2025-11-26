@@ -200,7 +200,7 @@ const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
                       <Label htmlFor="as-title">Title</Label>
                       <input
                         id="as-title"
-                        className="w-full border rounded px-2 py-1 text-sm"
+                        className="w-full border rounded px-2 py-1 text-sm text-foreground bg-background"
                         value={createTitle}
                         onChange={(e) => setCreateTitle(e.target.value)}
                         required
@@ -221,7 +221,7 @@ const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
                       <input
                         id="as-due"
                         type="datetime-local"
-                        className="w-full border rounded px-2 py-1 text-sm"
+                        className="w-full border rounded px-2 py-1 text-sm text-foreground bg-background"
                         value={createDueAt}
                         onChange={(e) => setCreateDueAt(e.target.value)}
                       />

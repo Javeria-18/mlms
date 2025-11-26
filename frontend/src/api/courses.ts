@@ -22,3 +22,6 @@ export async function getCourse(id: string) {
   const { data } = await api.get<Course>(`/api/courses/${id}`);
   return data;
 }
+export async function deleteCourse(id: string) {
+  await api.delete(`/api/courses/${id}`);
+}

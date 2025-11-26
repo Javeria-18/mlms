@@ -133,6 +133,17 @@ const deleteCourse = async (req, res) => {
     const { id } = req.params;
     const course = await new Parse.Query('Course').get(id, { useMasterKey: true });
     if (course.get('tenantId') !== req.tenantId) return res.status(403).json({ error: 'Forbidden' });
+     const enrollmentQuery = new Parse.Query('Enrollment');
+    enrollmentQuery.equalTo('courseId', id);
+    enrollmentQuery.equalTo('status', 'active');
+    const enrollmentCount = await enrollmentQuery.count({ useMasterKey: true });
+    
+    if (enrollmentCount > 0) {
+      return res.status(400).json({ 
+        error: 'Cannot delete course with active enrollments', 
+        enrollmentCount 
+      });
+    }
 
     const userRole = req.user.get('role');
     const isOwnerTeacher = userRole === 'Teacher' && course.get('teacherId') === req.user.id;

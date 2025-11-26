@@ -1,6 +1,10 @@
 const Parse = require('../config/parse');
 const { trackEvent } = require('../utils/analytics');
 const { rollupDaily } = require('../utils/analyticsRollup');
+const path = require('path');
+const fs = require('fs');
+const PDFDocument = require('pdfkit');
+const moment = require('moment');
 
 function toISTDayString(date) {
   const IST_OFFSET_MIN = 330; // +05:30
@@ -874,6 +878,154 @@ async function studentDashboardSummary(req, res) {
   }
 }
 
+async function exportQuizAnalyticsPDF(req, res) {
+  try {
+    const { courseId } = req.params;
+    const isTeacher = req.user.get('role') === 'Teacher';
+    const { studentId } = req.query;
+    const requestingStudentId = studentId || (isTeacher ? null : req.user.id);
+
+    // Authorization: If student is requesting, ensure they can only see their own data
+    if (!isTeacher && studentId && studentId !== req.user.id) {
+      return res.status(403).json({ error: 'Unauthorized: You can only view your own analytics' });
+    }
+
+    // Get analytics data
+    const analytics = await getQuizAnalyticsData(courseId, studentId, req.tenantId, isTeacher);
+
+    // Create PDF and stream directly to response
+    const doc = new PDFDocument();
+    const fileName = `quiz_analytics_${studentId || 'all'}_${Date.now()}.pdf`;
+
+    // Set response headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+    // Pipe the PDF directly to the response
+    doc.pipe(res);
+
+    // Add title and basic info
+    doc
+      .fontSize(16)
+      .text('Quiz Attempts Report', { align: 'center', underline: true })
+      .moveDown(0.5);
+
+    doc
+      .fontSize(10)
+      .text(`Generated for: ${req.user.get('username')}`)
+      .text(`Role: ${req.user.get('role')}`)
+      .text(`Date: ${moment().format('MMMM Do YYYY, h:mm:ss a')}`)
+      .moveDown(0.5);
+
+    // Add quiz attempts table
+    if (analytics.quizAttempts && analytics.quizAttempts.length > 0) {
+      // Table header
+      const startY = doc.y;
+      let currentY = startY;
+      const rowHeight = 20;
+      const pageWidth = 550;
+      const leftMargin = 50;
+      const rightMargin = 50;
+      const col1Width = 250;
+      const col2Width = 60;
+      const col3Width = 100;
+
+      // Draw table header
+      doc.font('Helvetica-Bold')
+         .fontSize(10)
+         .text('Quiz Title', leftMargin, currentY, { width: col1Width, align: 'left' })
+         .text('Score', leftMargin + col1Width + 10, currentY, { width: col2Width, align: 'right' })
+         .text('Date', leftMargin + col1Width + col2Width + 20, currentY, { width: col3Width, align: 'right' });
+
+      currentY += rowHeight;
+
+      // Draw line under header
+      doc.moveTo(leftMargin, currentY)
+        .lineTo(leftMargin + col1Width + col2Width + col3Width + 20, currentY)
+        .lineWidth(1)
+        .stroke();
+
+      currentY += 10;
+
+      // Table rows
+      doc.font('Helvetica').fontSize(10);
+      
+      analytics.quizAttempts.forEach((attempt) => {
+        // Check if we need a new page
+        if (currentY > 750) {
+          doc.addPage();
+          currentY = 50;
+        }
+
+        doc.text(attempt.quizTitle || 'Untitled Quiz', leftMargin, currentY, { 
+          width: col1Width, 
+          align: 'left',
+          lineGap: 5
+        });
+
+        doc.text(`${attempt.score}%`, leftMargin + col1Width + 10, currentY, { 
+          width: col2Width, 
+          align: 'right' 
+        });
+
+        doc.text(moment(attempt.completedAt).format('MMM D, YYYY'), 
+                leftMargin + col1Width + col2Width + 20, 
+                currentY, 
+                { width: col3Width, align: 'right' });
+
+        currentY += rowHeight;
+      });
+    } else {
+      doc.text('No quiz attempts found.', 50, doc.y);
+    }
+
+    // Finalize the PDF
+    doc.end();
+
+  } catch (error) {
+    console.error('Error in exportQuizAnalyticsPDF:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Failed to generate PDF' });
+    }
+  }
+}
+
+async function getQuizAnalyticsData(courseId, studentId, tenantId, isTeacher) {
+  const QuizAttempt = Parse.Object.extend('QuizAttempt');
+  const query = new Parse.Query(QuizAttempt);
+
+  query.equalTo('tenantId', tenantId);
+  if (courseId) query.equalTo('courseId', courseId);
+  if (studentId) query.equalTo('studentId', studentId);
+  if (!isTeacher) query.equalTo('status', 'submitted');
+
+  query.include(['quiz']);
+  query.descending('completedAt');
+  query.limit(1000); // Adjust based on your needs
+
+  const attempts = await query.find({ useMasterKey: true });
+
+  // Process data
+  const quizAttempts = attempts.map(attempt => ({
+    quizTitle: attempt.get('quiz')?.get('title') || 'Untitled Quiz',
+    score: attempt.get('score') || 0,
+    completedAt: attempt.get('completedAt') || new Date()
+  }));
+
+  // Calculate statistics
+  const scores = quizAttempts.map(a => a.score).filter(score => typeof score === 'number');
+  const averageScore = scores.length > 0
+    ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2)
+    : 0;
+  const highestScore = scores.length > 0 ? Math.max(...scores) : 0;
+
+  return {
+    quizAttempts,
+    averageScore,
+    highestScore
+  };
+}
+
 module.exports = {
   postEvent,
   getOverview,
@@ -883,6 +1035,7 @@ module.exports = {
   studentDashboardSummary,
   courseQuizAnalytics,
   courseAssignmentAnalytics,
-   studentCourseQuizAnalytics,        // add this
+  studentCourseQuizAnalytics,        // add this
   studentCourseAssignmentAnalytics,
- };
+  exportQuizAnalyticsPDF,
+};
